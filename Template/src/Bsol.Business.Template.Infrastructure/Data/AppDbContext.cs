@@ -29,12 +29,38 @@ public class AppDbContext : DbContext
     }
     public DbSet<Core.TemplateAggregate.Template> Template { get; set; }
 
+    public DbSet<Account> Accounts { get; set; }
+    public DbSet<Transaction> Transactions { get; set; }
+
     //User For Audits
     public DbSet<Audit> Audits { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Account: AccountNumber único
+        modelBuilder.Entity<Account>()
+            .HasIndex(a => a.AccountNumber)
+            .IsUnique();
+
+        // Transaction: VoucherCode único
+        modelBuilder.Entity<Transaction>()
+            .HasIndex(t => t.VoucherCode)
+            .IsUnique();
+
+        // Relaciones Transaction -> Account
+        modelBuilder.Entity<Transaction>()
+            .HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(t => t.SourceAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Transaction>()
+            .HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(t => t.DestinationAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
